@@ -18,7 +18,6 @@ const Register: React.FC<registerProps> = ({}) => {
       <Wrapper variant='small'>
       <Formik initialValues={{username: '', password: ''}}
          onSubmit={async (values, {setErrors}) => {
-            console.log(values)
             const response = await register(values);
             if(response.data?.register.errors){
                 setErrors(toErrorMap(response.data.register.errors)); 
