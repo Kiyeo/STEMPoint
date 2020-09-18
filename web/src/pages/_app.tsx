@@ -1,7 +1,7 @@
 import { ThemeProvider, CSSReset } from '@chakra-ui/core'
 import {cacheExchange, QueryInput, Cache, query} from '@urql/exchange-graphcache';
 import {createClient, dedupExchange, fetchExchange, Provider} from 'urql'
-import {LoginMutation, MeDocument, MeQuery, Query, RegisterMutation, useLoginMutation} from '../generated/graphql';
+import {LoginMutation, LogoutMutation, MeDocument, MeQuery, Query, RegisterMutation, useLoginMutation} from '../generated/graphql';
 
 import theme from '../theme'
 
@@ -22,6 +22,14 @@ const client = createClient({
   exchanges: [dedupExchange, cacheExchange({
     updates:{
       Mutation:{
+        logout: (_result, args, cache, info) =>{
+          betterUpdateQuery<LogoutMutation, MeQuery>(
+            cache, 
+            {query: MeDocument}, 
+            _result, 
+            () => ({me:null})
+          );
+        },
         login:(_result, args, cache, info) => {
             betterUpdateQuery<LoginMutation, MeQuery>(
               cache, 
