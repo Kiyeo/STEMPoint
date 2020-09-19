@@ -13,6 +13,7 @@ import cors from 'cors'
 import {createConnection} from 'typeorm'
 import {User} from './entities/User';
 import {Post} from './entities/Post';
+import path from "path"
 
 const main = async () => {
   const conn = await createConnection({
@@ -22,14 +23,11 @@ const main = async () => {
     password: 'postgres',
     logging: true,
     synchronize: true,
+    migrations: [path.join(__dirname, "./migrations/*")],
     entities: [Post, User]
   });
+  await conn.runMigrations()
 
-
-  //const post = orm.em.create(Post, {title: 'my first post'});
-  //await orm.em.persistAndFlush(post);
-  //const posts = await orm.em.find(Post, {});
-  //console.log(posts);
   const app = express();
 
   const RedisStore = connectRedis(session)

@@ -2,6 +2,23 @@ import {cacheExchange} from "@urql/exchange-graphcache";
 import {dedupExchange, fetchExchange} from "urql"
 import {LoginMutation, LogoutMutation, RegisterMutation, MeQuery, MeDocument} from "../generated/graphql"
 import {betterUpdateQuery} from "./betterUpdateQuery";
+import { pipe, tap } from 'wonka';
+import { Exchange } from 'urql';
+import Router from "next/router";
+
+export const errorExchange: Exchange = ({ forward }) => ops$ => {
+  return pipe(
+    forward(ops$),
+    tap(({ error }) => {
+      // If the OperationResult has an error send a request to sentry
+      if (error) {
+           if(error?.message.includes('Not logged')){
+             Router.replace('/login');
+           }
+      }
+    })
+  );
+};
 
 export const createUrqlClient = (ssrExchange: any) => ({
   url: 'http://localhost:4000/graphql',
@@ -52,6 +69,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
       }
     }
   }),
+  errorExchange,
     ssrExchange,
     fetchExchange,
   ],
