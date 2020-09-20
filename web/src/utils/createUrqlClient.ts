@@ -1,6 +1,6 @@
 import {cacheExchange, Resolver} from "@urql/exchange-graphcache";
 import {dedupExchange, fetchExchange, stringifyVariables} from "urql"
-import {LoginMutation, LogoutMutation, RegisterMutation, MeQuery, MeDocument, VoteMutationVariables} from "../generated/graphql"
+import {LoginMutation, LogoutMutation, RegisterMutation, MeQuery, MeDocument, VoteMutationVariables, DeletePostMutationVariables} from "../generated/graphql"
 import {betterUpdateQuery} from "./betterUpdateQuery";
 import { pipe, tap } from 'wonka';
 import { Exchange } from 'urql';
@@ -140,6 +140,12 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
       },
     updates: {
       Mutation: {
+        deletePost: (_result, args, cache, info) => {
+          cache.invalidate({
+            __typename: 'Post', 
+            id: (args as DeletePostMutationVariables).id,
+            });
+        },
         vote: (_result, args, cache, info) => {
           const {postId, value} = args as VoteMutationVariables;
           const data = cache.readFragment(
