@@ -44,10 +44,10 @@ export class PostResolver {
     @Root() post: Post,
     @Ctx() {upvoteLoader, req}: MyContext
   ){
-    if(!req.session.userIds){
+    if(!req.session.userId){
       return null
     }
-    const upvote = await upvoteLoader.load({postId: post.id, userId: req.session.userIds})
+    const upvote = await upvoteLoader.load({postId: post.id, userId: req.session.userId})
 
     return upvote ? upvote.value : null
   }
@@ -103,7 +103,6 @@ export class PostResolver {
   async posts(
     @Arg('limit', () => Int) limit: number,
     @Arg('cursor', () => String, {nullable: true}) cursor: string | null,
-    @Ctx() {req}: MyContext
   ): Promise<PaginatedPosts>{
     // 20 -> 21. User input is 20 but we check for 21 and if it least than 21 then we know end of posts.
     const realLimit = Math.min(50, limit);

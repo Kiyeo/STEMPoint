@@ -5,7 +5,7 @@ import {Upvote} from "../entities/Upvote";
 // [{postIdL 5, userId: 10}]
 // [{postIdL 5, userId: 10, value: 1}]
 export const createUpvoteLoader= () => 
-  new DataLoader<{postId: number,userId: number}, Upvote | null>(
+  new DataLoader<{postId: number, userId: number}, Upvote | null>(
     async (keys) => {
     const upvotes = await Upvote.findByIds(keys as any)
     const upvoteIdsToUpvote: Record<string, Upvote> = {}
