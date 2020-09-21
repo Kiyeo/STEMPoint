@@ -4,6 +4,7 @@ import {Arg, Ctx, Field, FieldResolver, InputType, Int, Mutation, ObjectType, Qu
 import {Post} from "../entities/Post";
 import {getConnection} from "typeorm";
 import {Upvote} from "../entities/Upvote";
+import {User} from "../entities/User";
 
 @InputType()
 class PostInput{
@@ -28,6 +29,27 @@ export class PostResolver {
     @Root() root: Post
   ){
     return root.text.slice(0, 500)
+  }
+
+  @FieldResolver(() => User)
+  originalPoster(
+    @Root() post: Post,
+    @Ctx() {userLoader}: MyContext
+  ){
+    return userLoader.load(post.originalPosterId)
+  }
+
+  @FieldResolver(() => Int, {nullable: true})
+  async voteStatus(
+    @Root() post: Post,
+    @Ctx() {upvoteLoader, req}: MyContext
+  ){
+    if(!req.session.userIds){
+      return null
+    }
+    const upvote = await upvoteLoader.load({postId: post.id, userId: req.session.userIds})
+
+    return upvote ? upvote.value : null
   }
 
   @Mutation(() => Boolean)
@@ -89,50 +111,31 @@ export class PostResolver {
 
     const replacements: any[] = [realLimitPlusOne]
 
-    if(req.session.userId){
-      replacements.push(req.session.userId);
-    }
-
-    let cursorIndex = 3
     if(cursor){
       replacements.push(new Date(parseInt(cursor)));
-      cursorIndex = replacements.length
     }
 
     const posts = await getConnection().query(
       `
-                          select p.*, 
-                          json_build_object(
-                            'id', u.id,
-                            'username', u.username,
-                            'email', u.email,
-                            'createdAt', u."createdAt",
-                            'updatedAt', u."updatedAt"
-                          ) "originalPoster",
-                          ${
-                            req.session.userId 
-                            ? '(select value from upvote where "userId" = $2 and "postId" = p.id) "voteStatus"' 
-                            : 'null as "voteStatus"'
-                          }
+                          select p.*
                           from post p
-                          inner join public.user u on u.id = p."originalPosterId"
-                          ${cursor ? `where p."createdAt" < $${cursorIndex}` : ""}
+                          ${cursor ? `where p."createdAt" < $2` : ""}
                           order by p."createdAt" DESC
                           limit $1
                           `, 
                           replacements
                                             );
 
-    const qb = getConnection()
-    .getRepository(Post)
-    .createQueryBuilder("p")
-    .innerJoinAndSelect(
-      'p.originalPoster', 
-      "u",
-      'u.id = p."originalPosterId"'
-    )
-    .orderBy('p."createdAt"', "DESC")
-    .take(realLimitPlusOne)
+    //const qb = getConnection()
+    //.getRepository(Post)
+    //.createQueryBuilder("p")
+    //.innerJoinAndSelect(
+    //  'p.originalPoster', 
+    //  "u",
+    //  'u.id = p."originalPosterId"'
+    //)
+    //.orderBy('p."createdAt"', "DESC")
+    //.take(realLimitPlusOne)
 
   //if(cursor){
   //  qb.where('p."createdAt" < :cursor', {cursor: new Date(parseInt(cursor))})
@@ -149,7 +152,7 @@ export class PostResolver {
   post(
     @Arg('id', () => Int) id: number
   ): Promise<Post | undefined> {
-    return Post.findOne(id, {relations: ["originalPoster"]});
+    return Post.findOne(id);
   }
 
   @Mutation(() => Post)
